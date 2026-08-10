@@ -1,0 +1,7 @@
+[Unit]
+Description=Persist Veeam deployed OS state into /config
+ConditionPathIsDirectory=/config
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/veeam-state-sync.sh

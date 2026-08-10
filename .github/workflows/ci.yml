@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - develop
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Validate Container
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Install shellcheck
+        run: sudo apt-get update && sudo apt-get install -y shellcheck
+
+      - name: Shellcheck
+        run: shellcheck scripts/*.sh tests/*.sh
+
+      - name: Build image
+        run: docker build -t virtual-veeam-file-server:test .
+
+      - name: Run container tests
+        run: IMAGE_NAME=virtual-veeam-file-server:test tests/run-container-tests.sh

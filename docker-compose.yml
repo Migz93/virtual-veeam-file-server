@@ -1,0 +1,30 @@
+services:
+  vvfs:
+    build: .
+    image: virtual-veeam-file-server
+    container_name: vvfs
+    hostname: vvfs
+    cgroup: host
+    networks:
+      vvfs_lan:
+        ipv4_address: 192.168.1.31
+        mac_address: 02:42:c0:a8:01:1f
+    environment:
+      VEEAM_USERNAME: gdveeam
+      VEEAM_PASSWORD: ""
+      VEEAM_SSH_PUBLIC_KEY: "ssh-ed25519 REPLACE_WITH_PUBLIC_KEY example@host"
+      PUID: 1000
+      PGID: 1000
+    volumes:
+      - /opt/vvfs:/config
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+      - /mnt:/mnt
+    tmpfs:
+      - /run
+      - /run/lock
+    restart: unless-stopped
+
+networks:
+  vvfs_lan:
+    name: vvfs_lan
+    external: true

@@ -1,0 +1,13 @@
+[Unit]
+Description=Virtual Veeam File Server SSH daemon
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/sbin/sshd -D -e -f /run/virtual-veeam-file-server/sshd_config
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=on-failure
+RestartSec=2s
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,10 @@
+.git
+.github
+.pytest_cache
+.shellcheck
+.env
+.env.*
+*.md
+!README.md
+tmp
+tests

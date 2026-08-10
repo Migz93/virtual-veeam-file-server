@@ -1,0 +1,11 @@
+[Unit]
+Description=Periodically persist Veeam deployed OS state
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=2min
+AccuracySec=30s
+Unit=virtual-veeam-state-sync.service
+
+[Install]
+WantedBy=timers.target
