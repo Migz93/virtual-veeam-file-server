@@ -52,6 +52,12 @@ The SHA tag format intentionally matches Hubarr's `sha-<shortsha>` convention.
 
 Base image and dependency update PRs should receive normal review and CI. Do not auto-merge them initially, because Veeam compatibility depends on Linux, systemd, and OpenSSH behavior.
 
+## Dependency Updates
+
+Dependabot checks Docker and GitHub Actions weekly and assigns new update PRs to `Migz93`. Existing schedules, limits and commit-message rules remain unchanged.
+
+Both entries target `develop`, which is currently the repository's default branch. Their `assignees` lists therefore apply to version and security update PRs. GitHub ignores these assignees for security updates when an entry targets a non-default branch; if the default branch or update targets change, retain the version-update entries and configure assignees for the default branch too. See the [GitHub assignees reference](https://docs.github.com/en/code-security/reference/supply-chain-security/dependabot-options-reference#assignees).
+
 ## Review Gate
 
 When implementation is complete and the user is happy with local validation, stop before opening a PR and ask whether they want:
