@@ -27,6 +27,12 @@ wildcards or shell operators. Use the running container as `vscode` to edit
 source and install development tools. Do not install project dependencies on
 the host. Host Git and review authentication stay outside the tool container.
 
+Launcher commands are intentionally serialized for each host user. An `exec`
+command holds the lifecycle lock until it exits; other launcher commands,
+including another `exec` or `status`, return a try-later message meanwhile.
+Finish or close that command before using the launcher again. This also prevents
+cleanup during a command whose process name happens to match an allowed idle name.
+
 The tool container has one source bind and no separate Docker socket or host
 authentication-directory mounts, published ports or persistent volumes. The source
 bind includes readable ignored files; Git ignore rules do not exclude them from
