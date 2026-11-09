@@ -17,7 +17,8 @@ SYSTEMD_DOCKER_ARGS=(
 )
 
 cleanup() {
-  for container in "${CONTAINERS[@]}"; do
+  for container in "${CONTAINERS[@]:-}"; do
+    [[ -n "${container}" ]] || continue
     docker rm -f "${container}" >/dev/null 2>&1 || true
   done
   if [[ "${IMAGE_BUILT}" == true && -d "${WORK_DIR}" ]]; then
