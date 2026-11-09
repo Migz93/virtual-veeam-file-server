@@ -1,0 +1,29 @@
+{
+  "name": "Virtual Veeam File Server development",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": "."
+  },
+  "runArgs": [
+    "--name",
+    "zdev-virtual-veeam-file-server"
+  ],
+  "workspaceMount": "source=${localWorkspaceFolder},target=/workspaces/virtual-veeam-file-server,type=bind,consistency=cached",
+  "workspaceFolder": "/workspaces/virtual-veeam-file-server",
+  "remoteUser": "vscode",
+  "containerUser": "vscode",
+  "updateRemoteUserUID": true,
+  "userEnvProbe": "none",
+  "shutdownAction": "stopContainer",
+  "mounts": [],
+  "containerEnv": {
+    "PYTHONDONTWRITEBYTECODE": "1"
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "timonwong.shellcheck"
+      ]
+    }
+  }
+}

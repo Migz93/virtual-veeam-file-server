@@ -1,0 +1,1 @@
+Read AGENTS.md before working in this repository. Follow its devcontainer/host split, TESTING.md and docs/workflow.md. Read ignored LOCAL.md when present for private commands and task records. Reviews must not recursively launch other reviews.

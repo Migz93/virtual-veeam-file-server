@@ -33,3 +33,22 @@ jobs:
 
       - name: Run container tests
         run: IMAGE_NAME=virtual-veeam-file-server:test tests/run-container-tests.sh
+
+  development:
+    name: Validate Development Tools
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Build development image
+        run: docker build -t virtual-veeam-file-server:dev-tools .devcontainer
+
+      - name: Check development tools and lifecycle guards
+        run: |
+          docker run --rm \
+            -v "$PWD:/workspace:ro" -w /workspace \
+            virtual-veeam-file-server:dev-tools \
+            bash -c 'shellcheck scripts/*.sh tests/*.sh && python3 -m unittest discover -s tests -p "test_*.py"'
