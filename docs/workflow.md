@@ -124,3 +124,17 @@ CodeRabbit CLI review, pushing, PR creation, merging and release require the
 owner's request. Use semantic PR titles. Tooling/documentation work does not trigger a
 live deployment; persistent runtime setup and real VBR testing are separate
 operations.
+
+## PR Title Validation
+
+The Semantic PR check runs on `pull_request` events (opened, edited,
+synchronize and reopened). It validates the title from the event payload without
+checking out PR code, accessing secrets or requesting token permissions. Accepted
+types are `build`, `chore`, `ci`, `docs`, `feat`, `fix`, `perf`, `refactor`,
+`revert`, `style` and `test`; optional scopes and a breaking-change `!` are
+supported. Keep the title accurate when reviewing and merging a PR.
+
+The check runs the workflow from the PR merge ref, so a PR can change its own
+formatting check. Review workflow edits and the final title before merging;
+this check is a formatting aid, not a trusted approval boundary. Fork PRs may
+wait for GitHub's normal contributor approval before checks run.
