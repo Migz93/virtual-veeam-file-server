@@ -2,3 +2,8 @@
 *.log
 tmp/
 .DS_Store
+
+# Private host notes and Python development artifacts
+/LOCAL.md
+__pycache__/
+*.py[cod]

@@ -141,7 +141,7 @@ The image is based on Ubuntu 26.04. Use Veeam Backup & Replication 13.1 or newer
 - [Architecture](docs/architecture.md)
 - [Testing](TESTING.md)
 - [Security](SECURITY.md)
-- [Workflow](docs/workflow.md)
+- [Workflow and development tools](docs/workflow.md)
 
 ## AI Transparency
 
