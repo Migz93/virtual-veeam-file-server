@@ -2,14 +2,14 @@
 
 # Testing
 
-Virtual Veeam File Server has two validation layers. Development-container checks lint scripts and test lifecycle safety. Host Docker container tests check the image, entrypoint, SSH, persistence, and healthcheck behavior. Manual Veeam validation checks the parts that require a real Veeam Backup & Replication server.
+Validation covers development tooling, runtime behavior and manual Veeam integration. Development-container checks lint scripts and test lifecycle safety. Host Docker container tests check the image, entrypoint, SSH, persistence, and healthcheck behavior. Manual Veeam validation checks the parts that require a real Veeam Backup & Replication server.
 
 ## Commands
 
 | Command | What it does |
 |---|---|
 | In the devcontainer: `shellcheck scripts/*.sh tests/*.sh` | Lints shell scripts |
-| In the devcontainer: `python3 -m unittest discover -s tests -p 'test_*.py'` | Tests lifecycle ownership and cleanup guards without Docker access |
+| In the devcontainer: `python3 -m unittest discover -s tests -p 'test_*.py'` | Tests lifecycle ownership, cleanup, command forwarding and build failure without Docker access |
 | On the host: `docker build -t virtual-veeam-file-server:test .` | Optional standalone runtime build |
 | On the host: `IMAGE_NAME=virtual-veeam-file-server:test tests/run-container-tests.sh` | Builds that image and runs the complete container suite |
 

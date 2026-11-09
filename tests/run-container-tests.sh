@@ -6,6 +6,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 WORK_DIR="$(mktemp -d -t zdev-virtual-veeam-file-server-e2e.XXXXXXXX)"
 RUN_ID="$(date -u +%Y%m%dT%H%M%SZ)-$$-${RANDOM}"
 RESOURCE_LABEL="io.virtual-veeam-file-server.test-run=${RUN_ID}"
+IMAGE_BUILT=false
 CONTAINERS=()
 RUN_DETACHED_NAME=
 SYSTEMD_DOCKER_ARGS=(
@@ -16,11 +17,11 @@ SYSTEMD_DOCKER_ARGS=(
 )
 
 cleanup() {
-  for container in "${CONTAINERS[@]:-}"; do
+  for container in "${CONTAINERS[@]}"; do
     docker rm -f "${container}" >/dev/null 2>&1 || true
   done
-  if [[ -d "${WORK_DIR}" ]]; then
-    docker run --rm --name "$(container_name cleanup)" --label "${RESOURCE_LABEL}" \
+  if [[ "${IMAGE_BUILT}" == true && -d "${WORK_DIR}" ]]; then
+    docker run --rm --pull=never --name "$(container_name cleanup)" --label "${RESOURCE_LABEL}" \
       -v "${WORK_DIR}:/work" --entrypoint bash "${IMAGE_NAME}" -c 'chmod -R u+rwX,go+rwX /work 2>/dev/null || true' >/dev/null 2>&1 || true
   fi
   rm -rf "${WORK_DIR}"
@@ -73,6 +74,7 @@ get_ssh_port() {
 log "Run ${RUN_ID}; temporary config: ${WORK_DIR}"
 log "Building ${IMAGE_NAME}"
 docker build -t "${IMAGE_NAME}" "${ROOT_DIR}"
+IMAGE_BUILT=true
 
 log "Testing startup fails without credentials"
 no_creds="$(container_name no-creds)"

@@ -1,6 +1,7 @@
 """Verify that lifecycle operations preserve other work and active commands."""
 import fcntl
 import importlib.util
+import os
 from pathlib import Path
 import subprocess
 import sys
@@ -80,6 +81,63 @@ class DevelopmentTests(unittest.TestCase):
     def test_active_process_prevents_cleanup(self):
         with self.assertRaisesRegex(SystemExit, "cleanup deferred"):
             self.invoke_down("PID COMMAND\n1 sh\n2 python3\n")
+
+    def test_commandless_process_row_defers_cleanup(self):
+        with self.assertRaisesRegex(SystemExit, "Unrecognised process list; cleanup deferred"):
+            self.invoke_down("PID COMMAND\n1 sh\n2\n")
+
+    def test_exec_forwards_documented_command_and_literal_glob(self):
+        command = ["python3", "-m", "unittest", "discover", "-s", "tests", "-p", "test_*.py"]
+        with tempfile.TemporaryDirectory() as temp:
+            with (
+                patch.object(manager.Path, "home", return_value=Path(temp)),
+                patch.object(sys, "argv", ["manage.py", "exec", *command]),
+                patch.object(manager.shutil, "which", return_value="/tools/devcontainer"),
+                patch.object(manager, "inspect", return_value=container()),
+                patch.object(manager, "run") as action,
+            ):
+                manager.main()
+                action.assert_called_once_with("/tools/devcontainer", "exec",
+                                               "--workspace-folder", str(manager.WORKSPACE),
+                                               *command)
+
+    def test_up_rejects_unexpected_container_without_reporting_ready(self):
+        unexpected = container()
+        unexpected["Config"]["Labels"]["devcontainer.local_folder"] = "/another/checkout"
+        with tempfile.TemporaryDirectory() as temp:
+            with (
+                patch.object(manager.Path, "home", return_value=Path(temp)),
+                patch.object(sys, "argv", ["manage.py", "up"]),
+                patch.object(manager.shutil, "which", return_value="/tools/devcontainer"),
+                patch.object(manager, "inspect", side_effect=[None, unexpected]),
+                patch.object(manager.subprocess, "run",
+                             return_value=subprocess.CompletedProcess([], 0)) as startup,
+                patch.object(manager, "run") as action,
+                patch("builtins.print") as output,
+            ):
+                with self.assertRaisesRegex(SystemExit, "another checkout; preserved"):
+                    manager.main()
+                startup.assert_called_once()
+                action.assert_not_called()
+                output.assert_not_called()
+
+    def test_failed_runtime_build_does_not_start_cleanup_container(self):
+        with tempfile.TemporaryDirectory() as temp:
+            work = Path(temp)
+            fake_docker = work / "docker"
+            log = work / "docker-calls"
+            fake_docker.write_text('#!/bin/sh\nprintf "%s\\n" "$*" >> "$VVFS_TEST_DOCKER_LOG"\nexit 42\n')
+            fake_docker.chmod(0o755)
+            env = dict(os.environ, PATH=str(work) + os.pathsep + os.environ["PATH"],
+                       TMPDIR=str(work), VVFS_TEST_DOCKER_LOG=str(log),
+                       IMAGE_NAME="virtual-veeam-file-server:synthetic-build-failure")
+            result = subprocess.run(["bash", str(ROOT / "tests/run-container-tests.sh")],
+                                    env=env, capture_output=True, text=True, timeout=10)
+            self.assertEqual(result.returncode, 42, result.stdout + result.stderr)
+            calls = log.read_text().splitlines()
+            self.assertEqual(len(calls), 1, calls)
+            self.assertTrue(calls[0].startswith("build "), calls)
+            self.assertFalse(list(work.glob("zdev-virtual-veeam-file-server-e2e.*")))
 
     def test_extra_shell_prevents_cleanup(self):
         with self.assertRaisesRegex(SystemExit, "cleanup deferred"):

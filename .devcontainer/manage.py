@@ -87,7 +87,12 @@ def main():
                 rows = subprocess.check_output(
                     ["docker", "top", container["Id"], "-eo", "pid,comm"], text=True
                 ).splitlines()[1:]
-                commands = [row.split(maxsplit=1)[1].strip() for row in rows]
+                commands = []
+                for row in rows:
+                    parts = row.split(maxsplit=1)
+                    if len(parts) != 2:
+                        raise SystemExit("Unrecognised process list; cleanup deferred.")
+                    commands.append(parts[1].strip())
                 if any(command not in {"sh", "sleep", "docker-init", "tini"}
                        for command in commands) or commands.count("sh") > 1:
                     raise SystemExit("Development processes remain; cleanup deferred.")
