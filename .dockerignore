@@ -1,8 +1,13 @@
-# Only runtime sources belong in the production build context.
+# Only the runtime files copied by Dockerfile belong in the build context.
 # Docker sends the selected Dockerfile separately.
 **
 !scripts/
-!scripts/*.sh
+scripts/**
+!scripts/entrypoint.sh
+!scripts/healthcheck.sh
+!scripts/veeam-state-sync.sh
 !systemd/
-!systemd/*.service
-!systemd/*.timer
+systemd/**
+!systemd/virtual-veeam-sshd.service
+!systemd/virtual-veeam-state-sync.service
+!systemd/virtual-veeam-state-sync.timer

@@ -101,8 +101,9 @@ run `claude-review --base origin/develop --tests 'Describe the checks that passe
 from the clean, committed checkout. The command prints its saved run directory;
 use that exact directory for `--previous` in the delta/full loop below.
 If the helper is unavailable, provide the completed checks and request maintainer
-review; do not claim cross-AI clearance or bypass the review gate. Keep private
-installation paths, credentials and run records in ignored `LOCAL.md`.
+review; do not claim cross-AI clearance or bypass the review gate. Keep only
+non-secret installation paths and run records in ignored `LOCAL.md`; credentials
+must stay outside the checkout.
 
 After required checks pass, commit completed work using Conventional Commits on
 the task branch. Run automatic local Claude cross-AI review from the host with
