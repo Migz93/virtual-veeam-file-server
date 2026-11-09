@@ -1,10 +1,8 @@
-.git
-.github
-.pytest_cache
-.shellcheck
-.env
-.env.*
-*.md
-!README.md
-tmp
-tests
+# Only runtime sources belong in the production build context.
+# Docker sends the selected Dockerfile separately.
+**
+!scripts/
+!scripts/*.sh
+!systemd/
+!systemd/*.service
+!systemd/*.timer

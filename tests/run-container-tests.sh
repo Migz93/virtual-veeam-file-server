@@ -3,7 +3,9 @@ set -Eeuo pipefail
 
 IMAGE_NAME="${IMAGE_NAME:-virtual-veeam-file-server:test}"
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-WORK_DIR="$(mktemp -d)"
+WORK_DIR="$(mktemp -d -t zdev-virtual-veeam-file-server-e2e.XXXXXXXX)"
+RUN_ID="$(date -u +%Y%m%dT%H%M%SZ)-$$-${RANDOM}"
+RESOURCE_LABEL="io.virtual-veeam-file-server.test-run=${RUN_ID}"
 CONTAINERS=()
 RUN_DETACHED_NAME=
 SYSTEMD_DOCKER_ARGS=(
@@ -18,7 +20,8 @@ cleanup() {
     docker rm -f "${container}" >/dev/null 2>&1 || true
   done
   if [[ -d "${WORK_DIR}" ]]; then
-    docker run --rm -v "${WORK_DIR}:/work" ubuntu:26.04 bash -c 'chmod -R u+rwX,go+rwX /work 2>/dev/null || true' >/dev/null 2>&1 || true
+    docker run --rm --name "$(container_name cleanup)" --label "${RESOURCE_LABEL}" \
+      -v "${WORK_DIR}:/work" --entrypoint bash "${IMAGE_NAME}" -c 'chmod -R u+rwX,go+rwX /work 2>/dev/null || true' >/dev/null 2>&1 || true
   fi
   rm -rf "${WORK_DIR}"
 }
@@ -29,7 +32,7 @@ log() {
 }
 
 container_name() {
-  printf 'vvfs-test-%s-%s' "$1" "$RANDOM"
+  printf 'zdev-virtual-veeam-file-server-e2e-%s-%s' "${RUN_ID}" "$1"
 }
 
 wait_healthy() {
@@ -59,7 +62,7 @@ run_detached() {
   local name
   name="$(container_name "${label}")"
   CONTAINERS+=("${name}")
-  docker run -d --name "${name}" --network bridge "${SYSTEMD_DOCKER_ARGS[@]}" "$@" "${IMAGE_NAME}" >/dev/null
+  docker run -d --name "${name}" --label "${RESOURCE_LABEL}" --network bridge "${SYSTEMD_DOCKER_ARGS[@]}" "$@" "${IMAGE_NAME}" >/dev/null
   RUN_DETACHED_NAME="${name}"
 }
 
@@ -67,16 +70,20 @@ get_ssh_port() {
   docker port "$1" 22/tcp | sed 's/.*://'
 }
 
+log "Run ${RUN_ID}; temporary config: ${WORK_DIR}"
 log "Building ${IMAGE_NAME}"
 docker build -t "${IMAGE_NAME}" "${ROOT_DIR}"
 
 log "Testing startup fails without credentials"
-if docker run --rm --network bridge "${SYSTEMD_DOCKER_ARGS[@]}" "${IMAGE_NAME}" >/tmp/vvfs-no-creds.out 2>&1; then
-  cat /tmp/vvfs-no-creds.out >&2
+no_creds="$(container_name no-creds)"
+CONTAINERS+=("${no_creds}")
+if docker run --rm --name "${no_creds}" --label "${RESOURCE_LABEL}" --network bridge \
+  "${SYSTEMD_DOCKER_ARGS[@]}" "${IMAGE_NAME}" >"${WORK_DIR}/no-creds.out" 2>&1; then
+  cat "${WORK_DIR}/no-creds.out" >&2
   echo "container unexpectedly started without credentials" >&2
   exit 1
 fi
-grep -q "Set VEEAM_PASSWORD, VEEAM_SSH_PUBLIC_KEY, or both" /tmp/vvfs-no-creds.out
+grep -q "Set VEEAM_PASSWORD, VEEAM_SSH_PUBLIC_KEY, or both" "${WORK_DIR}/no-creds.out"
 
 log "Generating test SSH key"
 ssh-keygen -q -t ed25519 -N '' -f "${WORK_DIR}/id_ed25519"
@@ -104,7 +111,8 @@ fingerprint_two="$(ssh-keygen -lf "${CONFIG_ONE}/ssh/host-keys/ssh_host_ed25519_
 [[ "${fingerprint_one}" == "${fingerprint_two}" ]]
 
 log "Testing username reconciliation preserves /config/veeam"
-docker run --rm -v "${CONFIG_ONE}:/config" ubuntu:26.04 touch /config/veeam/preserved-marker
+docker run --rm --name "$(container_name marker)" --label "${RESOURCE_LABEL}" \
+  -v "${CONFIG_ONE}:/config" --entrypoint touch "${IMAGE_NAME}" /config/veeam/preserved-marker
 docker rm -f "${container}" >/dev/null
 run_detached rename -v "${CONFIG_ONE}:/config" -e VEEAM_USERNAME=newveeam -e VEEAM_SSH_PUBLIC_KEY="${PUBLIC_KEY}"
 container="${RUN_DETACHED_NAME}"
