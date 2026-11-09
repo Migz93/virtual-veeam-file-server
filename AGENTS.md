@@ -39,10 +39,12 @@ Read `LOCAL.md` for the maintained checkout and launcher, or use the portable
 commands in [docs/workflow.md](docs/workflow.md).
 
 Run authenticated Git, Claude/CodeRabbit reviews, runtime Docker image builds and
-`tests/run-container-tests.sh` on the host. The tool container deliberately has
-no Docker socket, Veeam credentials, live config, source-data mounts, persistent
-volumes or published ports. Its only bind is this source checkout. Runtime
-systemd tests are separate disposable containers; see `TESTING.md`.
+`tests/run-container-tests.sh` on the host. The tool container binds only this
+source checkout; it does not separately mount the Docker socket, host authentication
+directories, live config, source data or persistent volumes, and publishes no ports.
+The source bind includes readable ignored files: Git ignore rules do not filter
+bind mounts. Keep passwords, tokens, SSH keys and other credentials outside the
+checkout. Runtime systemd tests are separate disposable containers; see `TESTING.md`.
 
 Record exact task resources in ignored `LOCAL.md`. After validation and review,
 check concurrent chat ownership and active processes, then remove the development
@@ -91,6 +93,16 @@ Update docs as part of behavior changes:
 Keep docs factual and concise.
 
 ## Review Gate
+
+`claude-review` is a maintainer-managed helper, not a script shipped in this
+repository. On another host, ask the maintainer for the approved helper and setup,
+or arrange the review on an existing maintainer review host. On a configured host,
+run `claude-review --base origin/develop --tests 'Describe the checks that passed'`
+from the clean, committed checkout. The command prints its saved run directory;
+use that exact directory for `--previous` in the delta/full loop below.
+If the helper is unavailable, provide the completed checks and request maintainer
+review; do not claim cross-AI clearance or bypass the review gate. Keep private
+installation paths, credentials and run records in ignored `LOCAL.md`.
 
 After required checks pass, commit completed work using Conventional Commits on
 the task branch. Run automatic local Claude cross-AI review from the host with

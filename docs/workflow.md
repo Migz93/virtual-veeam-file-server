@@ -27,8 +27,11 @@ wildcards or shell operators. Use the running container as `vscode` to edit
 source and install development tools. Do not install project dependencies on
 the host. Host Git and review authentication stay outside the tool container.
 
-The tool container has one source bind, no Docker socket, credentials, ports or
-persistent volumes. Image-installed tools survive rebuilding; writable home,
+The tool container has one source bind and no separate Docker socket or host
+authentication-directory mounts, published ports or persistent volumes. The source
+bind includes readable ignored files; Git ignore rules do not exclude them from
+the container. Keep passwords, tokens, SSH keys and other credentials outside the
+checkout. Image-installed tools survive rebuilding; writable home,
 caches and ad-hoc installed dependencies disappear when it is removed. Add
 required tools to its Dockerfile. The manager rejects mismatched ownership/mounts
 and defers cleanup when it detects active development processes. The process-name
@@ -99,6 +102,11 @@ Dependabot checks both the runtime and development Dockerfiles, plus GitHub Acti
 Both entries target `develop`, which is currently the repository's default branch. Their `assignees` lists therefore apply to version and security update PRs. GitHub ignores these assignees for security updates when an entry targets a non-default branch; if the default branch or update targets change, retain the version-update entries and configure assignees for the default branch too. See the [GitHub assignees reference](https://docs.github.com/en/code-security/reference/supply-chain-security/dependabot-options-reference#assignees).
 
 ## Review Gate
+
+The `claude-review` helper is maintained separately from this repository. See
+[AGENTS.md](../AGENTS.md#review-gate) for the command, how to arrange setup or review
+on another host, and the fallback when it is unavailable. Do not claim clearance
+without a completed review.
 
 After the required checks pass, commit work on the task branch and run the
 standing automatic local Claude cross-AI review against `origin/develop`. Resolve
