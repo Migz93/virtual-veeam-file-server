@@ -2,15 +2,45 @@
 
 # Testing
 
-Virtual Veeam File Server has two validation layers. Local container tests check the image, entrypoint, SSH, persistence, and healthcheck behavior. Manual Veeam validation checks the parts that require a real Veeam Backup & Replication server.
+Validation covers development tooling, runtime behavior and manual Veeam integration. Development-container checks lint scripts and test lifecycle safety. Host Docker container tests check the image, entrypoint, SSH, persistence, and healthcheck behavior. Manual Veeam validation checks the parts that require a real Veeam Backup & Replication server.
 
 ## Commands
 
 | Command | What it does |
 |---|---|
-| `shellcheck scripts/*.sh tests/*.sh` | Lints shell scripts |
-| `docker build -t virtual-veeam-file-server:test .` | Builds the local test image |
-| `IMAGE_NAME=virtual-veeam-file-server:test tests/run-container-tests.sh` | Builds and runs the container test suite |
+| In the devcontainer: `shellcheck scripts/*.sh tests/*.sh` | Lints shell scripts |
+| In the devcontainer: `python3 -m unittest discover -s tests -p 'test_*.py'` | Tests lifecycle ownership, cleanup, command forwarding and build failure without Docker access |
+| On the host: `docker build -t virtual-veeam-file-server:test .` | Optional standalone runtime build |
+| On the host: `IMAGE_NAME=virtual-veeam-file-server:test tests/run-container-tests.sh` | Builds that image and runs the complete container suite |
+
+Use a unique task image tag instead of the shared example tag for concurrent
+local work. See [development commands](docs/workflow.md#development-tools) and
+ignored `LOCAL.md` for the maintained host launcher. CI runs both **Validate
+Container** (ShellCheck, runtime build, integration suite) and **Validate
+Development Tools** (development image, ShellCheck, lifecycle tests). The separate
+semantic PR-title check is also expected. Publishing builds AMD64 and ARM64;
+the runtime suite runs only on the executing host's architecture.
+
+## Disposable Runtime Resources
+
+Run the suite on the Docker host, outside the tool container. It requires Bash,
+Docker and the OpenSSH client tools (`ssh`, `ssh-keygen`). Each run logs its ID
+and temporary directory, labels its test containers, and names them
+`zdev-virtual-veeam-file-server-e2e-<run>-<case>`. It generates disposable SSH keys,
+binds only temporary config directories, and publishes SSH only on loopback at
+an allocated port. It does not use the example Compose network or live data.
+
+The suite uses real systemd as PID 1, host cgroup namespace and a writable
+`/sys/fs/cgroup` bind, plus tmpfs `/run` and `/run/lock`, matching runtime needs.
+The development tool container needs none of these permissions. Tests check
+startup health, SSH and synthetic persisted OS state; they do not install real
+Veeam transport packages or validate a backup/restore.
+
+The exit trap removes that run's containers and temporary config/keys, using
+the tested image for permission cleanup. If interrupted cleanup fails, inspect
+the logged run ID, labels and exact paths before removing only those resources.
+Retain image/build cache; do not prune unrelated resources. Never use a real
+`/config`, source-data mount, VBR credentials or persistent host directory here.
 
 ## Container Tests
 

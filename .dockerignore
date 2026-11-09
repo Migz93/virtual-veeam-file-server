@@ -1,10 +1,13 @@
-.git
-.github
-.pytest_cache
-.shellcheck
-.env
-.env.*
-*.md
-!README.md
-tmp
-tests
+# Only the runtime files copied by Dockerfile belong in the build context.
+# Docker sends the selected Dockerfile separately.
+**
+!scripts/
+scripts/**
+!scripts/entrypoint.sh
+!scripts/healthcheck.sh
+!scripts/veeam-state-sync.sh
+!systemd/
+systemd/**
+!systemd/virtual-veeam-sshd.service
+!systemd/virtual-veeam-state-sync.service
+!systemd/virtual-veeam-state-sync.timer
