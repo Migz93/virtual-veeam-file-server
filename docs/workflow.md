@@ -30,9 +30,11 @@ the host. Host Git and review authentication stay outside the tool container.
 The tool container has one source bind, no Docker socket, credentials, ports or
 persistent volumes. Image-installed tools survive rebuilding; writable home,
 caches and ad-hoc installed dependencies disappear when it is removed. Add
-required tools to its Dockerfile. Check concurrent chats before cleanup; the
-manager also refuses mismatched ownership/mounts and active development
-processes. One fixed development container name is supported per Docker host;
+required tools to its Dockerfile. The manager rejects mismatched ownership/mounts
+and defers cleanup when it detects active development processes. The process-name
+check is best-effort and can miss processes that use an allowed idle name. Use the
+launcher's `exec` command and check concurrent chats before cleanup.
+One fixed development container name is supported per Docker host;
 preserve another checkout's container rather than replacing it.
 
 Runtime builds and the disposable integration suite run with Docker on the
