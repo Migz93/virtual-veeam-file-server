@@ -12,25 +12,45 @@ Read this before working in this repo.
 | Container config directory | `/config` |
 | Default network in Compose | external Docker network `vvfs_lan` with a dedicated container IP |
 | Base image | `ubuntu:26.04` |
-| Checks to run before closing out work | `shellcheck scripts/*.sh tests/*.sh`, `docker build -t virtual-veeam-file-server:test .`, `IMAGE_NAME=virtual-veeam-file-server:test tests/run-container-tests.sh` |
+| Checks to run before closing out work | Devcontainer ShellCheck and management tests, plus host Docker container tests; see [TESTING.md](TESTING.md) |
 | Veeam validation | Real VBR deployment is manual and must not be claimed as verified until tested. |
 
 ## Before Starting Work
 
-If this directory has become a git repository, check the current branch before editing:
+Read `CLAUDE.md`, [docs/workflow.md](docs/workflow.md), [TESTING.md](TESTING.md)
+and the checkout's ignored `LOCAL.md` when present. Private host paths, launcher
+commands and resource/review records belong in `LOCAL.md`, never tracked docs.
 
-```bash
-git branch --show-current
-```
+Check branch/dirty state and concurrent chat ownership before editing. Fetch and
+fast-forward the intended base, then create or continue a task branch. Preserve
+uncommitted work; never force/reset or overwrite another chat's changes.
 
-Use Hubarr's branch model:
+- Work on short-lived `feat/*`, `fix/*`, `docs/*`, `ci/*` or `chore/*` branches.
+- PRs target `develop`; `main` is stable.
+- Never commit directly to `develop` or `main` without an explicit request.
 
-- Work happens on short-lived `feat/*`, `fix/*`, `docs/*`, `ci/*`, or `chore/*` branches.
-- PRs target `develop`.
-- `main` is the stable branch.
-- Do not commit directly to `develop` or `main` unless the user explicitly requests it.
+## Development Environment
 
-This workspace may be bootstrapped before git exists. In that case, proceed in-place and mention that branch checks were not available.
+Use the on-demand `.devcontainer` as `vscode` for source edits, dependency setup,
+ShellCheck and Python management tests. Keep project dependencies off the host
+and clients. Initial container scaffolding/lifecycle management runs on the host;
+the launcher uses Python's standard library and the official Dev Container CLI.
+Read `LOCAL.md` for the maintained checkout and launcher, or use the portable
+commands in [docs/workflow.md](docs/workflow.md).
+
+Run authenticated Git, Claude/CodeRabbit reviews, runtime Docker image builds and
+`tests/run-container-tests.sh` on the host. The tool container binds only this
+source checkout; it does not separately mount the Docker socket, host authentication
+directories, live config, source data or persistent volumes, and publishes no ports.
+The source bind includes readable ignored files: Git ignore rules do not filter
+bind mounts. Keep passwords, tokens, SSH keys and other credentials outside the
+checkout. Runtime systemd tests are separate disposable containers; see `TESTING.md`.
+
+Record exact task resources in ignored `LOCAL.md`. After validation and review,
+check concurrent chat ownership and active processes, then remove the development
+container with the launcher. Preserve build cache, private review records,
+unexpected resources and other chats' work. A task or merge does not authorize
+persistent deployment, real VBR use, LAN networking or source-data mounts.
 
 ## Docker Expectations
 
@@ -74,10 +94,25 @@ Keep docs factual and concise.
 
 ## Review Gate
 
-When implementation work is complete and the user is happy with the local result, stop before opening a PR and ask whether they want:
+`claude-review` is a maintainer-managed helper, not a script shipped in this
+repository. On another host, ask the maintainer for the approved helper and setup,
+or arrange the review on an existing maintainer review host. On a configured host,
+run `claude-review --base origin/develop --tests 'Describe the checks that passed'`
+from the clean, committed checkout. The command prints its saved run directory;
+use that exact directory for `--previous` in the delta/full loop below.
+If the helper is unavailable, provide the completed checks and request maintainer
+review; do not claim cross-AI clearance or bypass the review gate. Keep only
+non-secret installation paths and run records in ignored `LOCAL.md`; credentials
+must stay outside the checkout.
 
-1. Cross-AI review
-2. CodeRabbit CLI review
-3. Push and open the PR
+After required checks pass, commit completed work using Conventional Commits on
+the task branch. Run automatic local Claude cross-AI review from the host with
+explicit base `origin/develop`. Reviewers must not recursively launch reviews.
+Follow the shared review runner's saved-run delta/full loop: assess findings,
+fix valid issues, rerun affected checks, commit, obtain a clean delta, then a clean
+fresh full review of the current base/head. Rewritten history or a moved base
+requires a new full review. Record exact revisions and saved runs in `LOCAL.md`.
 
-Follow Hubarr's convention that PR titles are semantic, for example `feat: add initial docker prototype`.
+CodeRabbit CLI review, pushing, PR creation, merging and release remain owner
+decisions; ask before those actions unless already requested. Use semantic PR titles, such as `chore: add disposable
+development tooling`. Tooling changes do not trigger live deployment.
